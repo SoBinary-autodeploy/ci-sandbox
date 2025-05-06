@@ -42,5 +42,23 @@ jobs:
       - name: Build image
         run: docker build -t app .
 
-      - name: Run tests
-        run: docker run --rm --network=host -e DATABASE_HOST -e DATABASE_PORT -e DATABASE_NAME -e DATABASE_USER -e DATABASE_PASSWORD app
+           - name: Create report directory
+        run: mkdir -p ./pytest-output
+
+      - name: Run tests in Docker and save report
+        run: |
+          docker run --rm \
+            --network=host \
+            -e DATABASE_HOST \
+            -e DATABASE_PORT \
+            -e DATABASE_NAME \
+            -e DATABASE_USER \
+            -e DATABASE_PASSWORD \
+            -v ${{ github.workspace }}/pytest-output:/pytest-output \
+            app
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-output/pytest.xml
