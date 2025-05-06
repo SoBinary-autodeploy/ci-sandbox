@@ -6,4 +6,4 @@ COPY . .
 
 RUN pip install --no-cache-dir fastapi uvicorn pytest
 
-CMD ["pytest", "-q", "--junitxml=pytest.xml"]
+CMD ["pytest", "-q", "--junitxml=/pytest-output/pytest.xml"]
