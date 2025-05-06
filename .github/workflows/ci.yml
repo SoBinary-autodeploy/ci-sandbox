@@ -29,6 +29,16 @@ jobs:
       - name: Install dependencies
         run: pip install pytest
 
+      - name: Run tests and generate report
+        run: pytest -q --junitxml=pytest.xml
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest.xml
+
+
       - name: Run tests
         run: pytest -q
 
