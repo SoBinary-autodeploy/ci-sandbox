@@ -42,7 +42,7 @@ jobs:
       - name: Build image
         run: docker build -t app .
 
-           - name: Create report directory
+      - name: Create report directory
         run: mkdir -p ./pytest-output
 
       - name: Run tests in Docker and save report
