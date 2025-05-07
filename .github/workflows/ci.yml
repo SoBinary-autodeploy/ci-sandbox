@@ -2,22 +2,21 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
-        image: postgres:15
+        image: postgres:13
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
         ports:
           - 5432:5432
         options: >-
@@ -29,17 +28,12 @@ jobs:
     env:
       DB_HOST: localhost
       DB_PORT: 5432
-      DB_USER: testuser
-      DB_PASSWORD: testpass
-      DB_NAME: testdb
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: test_db
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -52,22 +46,24 @@ jobs:
       - name: Build Docker image
         run: docker build -t test-image .
 
-      - name: Run container and copy report
-        run: |
-          docker run -d --name test-container \
-            -e DB_HOST=${{ env.DB_HOST }} \
-            -e DB_PORT=${{ env.DB_PORT }} \
-            -e DB_USER=${{ env.DB_USER }} \
-            -e DB_PASSWORD=${{ env.DB_PASSWORD }} \
-            -e DB_NAME=${{ env.DB_NAME }} \
-            test-image
+      - name: Create output directory
+        run: mkdir -p pytest-output
 
-          docker cp test-container:/pytest-output/pytest.xml ./pytest.xml || true
-          docker logs test-container
-          docker stop test-container
+      - name: Run tests in Docker container
+        run: |
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/pytest-output:/pytest-output \
+            -e DB_HOST=$DB_HOST \
+            -e DB_PORT=$DB_PORT \
+            -e DB_USER=$DB_USER \
+            -e DB_PASSWORD=$DB_PASSWORD \
+            -e DB_NAME=$DB_NAME \
+            test-image \
+            pytest -q --junitxml=/pytest-output/pytest.xml
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report
-          path: pytest.xml
+          path: pytest-output/pytest.xml
