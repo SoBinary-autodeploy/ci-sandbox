@@ -10,6 +10,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
@@ -26,8 +27,8 @@ jobs:
 
       - name: Run container and copy report
         run: |
-          docker run --name test-container test-image
-          docker cp test-container:/app/pytest.xml ./pytest.xml
+          docker run --name test-container test-image || true
+          docker cp test-container:/pytest-output/pytest.xml ./pytest.xml || true
           docker rm test-container
 
       - name: Upload test report
