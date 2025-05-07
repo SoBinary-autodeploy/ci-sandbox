@@ -2,17 +2,44 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: testuser
+      DB_PASSWORD: testpass
+      DB_NAME: testdb
+
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -27,9 +54,17 @@ jobs:
 
       - name: Run container and copy report
         run: |
-          docker run --name test-container test-image || true
+          docker run -d --name test-container \
+            -e DB_HOST=${{ env.DB_HOST }} \
+            -e DB_PORT=${{ env.DB_PORT }} \
+            -e DB_USER=${{ env.DB_USER }} \
+            -e DB_PASSWORD=${{ env.DB_PASSWORD }} \
+            -e DB_NAME=${{ env.DB_NAME }} \
+            test-image
+
           docker cp test-container:/pytest-output/pytest.xml ./pytest.xml || true
-          docker rm test-container
+          docker logs test-container
+          docker stop test-container
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
