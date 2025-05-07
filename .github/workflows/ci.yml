@@ -10,55 +10,28 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: test_db
-      DATABASE_USER: test_user
-      DATABASE_PASSWORD: test_password
-
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Build image
-        run: docker build -t app .
+      - name: Build Docker image
+        run: docker build -t test-image .
 
-      - name: Create report directory
-        run: mkdir -p ./pytest-output
-
-      - name: Run tests in Docker and save report
+      - name: Run container and copy report
         run: |
-          docker run --rm \
-            --network=host \
-            -e DATABASE_HOST \
-            -e DATABASE_PORT \
-            -e DATABASE_NAME \
-            -e DATABASE_USER \
-            -e DATABASE_PASSWORD \
-            -v ${{ github.workspace }}/pytest-output:/pytest-output \
-            app
+          docker run --name test-container test-image
+          docker cp test-container:/app/pytest.xml ./pytest.xml
+          docker rm test-container
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report
-          path: pytest-output/pytest.xml
+          path: pytest.xml
