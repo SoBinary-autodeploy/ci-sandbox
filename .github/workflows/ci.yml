@@ -67,3 +67,16 @@ jobs:
         with:
           name: pytest-report
           path: pytest-output/pytest.xml
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: sobinary/ci-sandbox:latest,sobinary/ci-sandbox:${{ github.sha }}
