@@ -43,6 +43,34 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Install dependencies for security checks
+        run: |
+          pip install bandit
+
+      - name: Run Bandit SAST scan
+        run: bandit -r . -f json -o bandit-report.json || true
+
+      - name: Upload Bandit SAST report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update && sudo apt-get install wget -y
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.50.1_Linux-64bit.deb
+
+      - name: Scan Docker image with Trivy
+        run: trivy image -f json -o trivy-report.json test-image || true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+
       - name: Build Docker image
         run: docker build -t test-image .
 
