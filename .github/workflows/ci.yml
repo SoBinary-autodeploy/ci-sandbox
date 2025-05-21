@@ -48,7 +48,8 @@ jobs:
           pip install bandit
 
       - name: Run Bandit SAST scan
-        run: bandit -r . -f json -o bandit-report.json || true
+        run: bandit -r . -f json -o bandit-report.json
+        continue-on-error: true
 
       - name: Upload Bandit SAST report
         uses: actions/upload-artifact@v4
