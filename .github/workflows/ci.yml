@@ -43,8 +43,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit SAST scan
+        run: bandit -r . -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload Bandit SAST report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
       - name: Build Docker image
         run: docker build -t test-image .
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+
+      - name: Scan Docker image with Trivy
+        run: trivy image -f json -o trivy-report.json test-image
+        continue-on-error: true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
 
       - name: Create output directory
         run: mkdir -p pytest-output
