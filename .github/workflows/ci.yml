@@ -108,3 +108,16 @@ jobs:
           context: .
           push: true
           tags: sobinary/ci-sandbox:latest,sobinary/ci-sandbox:${{ github.sha }}
+      
+      - name: Deploy via SSH to Hetzner VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/ci-sandbox || git clone https://github.com/SoBinary-autodeploy/ci-sandbox.git /root/ci-sandbox
+            cd /root/ci-sandbox
+            git pull origin main
+            docker-compose down || true
+            docker-compose up -d --build
