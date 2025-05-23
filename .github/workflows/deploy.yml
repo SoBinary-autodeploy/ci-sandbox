@@ -1,0 +1,28 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy on VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 159.69.48.153
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/ci-sandbox || git clone https://github.com/SoBinary-autodeploy/ci-sandbox.git /root/ci-sandbox
+            cd /root/ci-sandbox
+            git pull origin main
+            docker-compose down || true
+            docker-compose up -d --build
